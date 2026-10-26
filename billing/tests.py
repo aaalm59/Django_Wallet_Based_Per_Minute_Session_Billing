@@ -1,5 +1,6 @@
 from datetime import timedelta
 from decimal import Decimal
+from django.db import IntegrityError, transaction
 from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -34,6 +35,29 @@ class BillingFlowTests(TestCase):
         self.assertEqual(response.status_code, 400)
         session.refresh_from_db()
         self.assertEqual(session.status, ConsultationSession.Status.ACCEPTED)
+
+    def test_user_cannot_start_a_second_active_session(self):
+        first = self.start(self.session_at())
+        second = ConsultationSession.objects.create(
+            user=self.user, provider=self.provider,
+            status=ConsultationSession.Status.ACCEPTED, per_minute_cost=Decimal("50.00"),
+        )
+        self.client.force_authenticate(self.user)
+        response = self.client.post(f"/api/sessions/{second.id}/start/")
+        self.assertEqual(response.status_code, 400)
+        first.refresh_from_db()
+        second.refresh_from_db()
+        self.assertEqual(first.status, ConsultationSession.Status.IN_PROGRESS)
+        self.assertEqual(second.status, ConsultationSession.Status.ACCEPTED)
+
+    def test_new_user_receives_wallet_and_database_blocks_negative_balance(self):
+        another_user = User.objects.create_user(username="wallet-owner", password="password")
+        self.assertEqual(another_user.wallet.balance, Decimal("0.00"))
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                Wallet.objects.filter(pk=self.wallet.pk).update(balance=Decimal("-1.00"))
+        self.wallet.refresh_from_db()
+        self.assertEqual(self.wallet.balance, Decimal("0.00"))
 
     def test_create_user_api_creates_provider_and_rejects_duplicate_username(self):
         response = self.client.post("/api/users/", {

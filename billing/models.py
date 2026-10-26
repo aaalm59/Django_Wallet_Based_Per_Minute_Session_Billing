@@ -16,6 +16,9 @@ class Wallet(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="wallet")
     balance = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"), validators=[MinValueValidator(0)])
 
+    class Meta:
+        constraints = [models.CheckConstraint(condition=models.Q(balance__gte=0), name="wallet_balance_must_be_nonnegative")]
+
 
 class RechargeTransaction(models.Model):
     class Status(models.TextChoices):
@@ -52,6 +55,15 @@ class ConsultationSession(models.Model):
     billed_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
     actual_billable_minutes = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user"],
+                condition=models.Q(status="in_progress"),
+                name="one_in_progress_session_per_user",
+            )
+        ]
 
 
 class SessionBill(models.Model):

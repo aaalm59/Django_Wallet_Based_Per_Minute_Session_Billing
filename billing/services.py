@@ -1,5 +1,5 @@
 from django.shortcuts import get_object_or_404
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 from .models import ConsultationSession, SessionBill, Wallet
@@ -20,10 +20,15 @@ def start_session(session_id, user):
     required = session.per_minute_cost * 5
     if wallet.balance < required:
         _fail("At least five minutes of balance is required to start a session.")
-    session.locked_per_minute_cost = session.per_minute_cost
-    session.status = ConsultationSession.Status.IN_PROGRESS
-    session.started_at = timezone.now()
-    session.save(update_fields=["locked_per_minute_cost", "status", "started_at"])
+    try:
+        # The nested transaction lets us translate a concurrent unique-constraint failure to HTTP 400.
+        with transaction.atomic():
+            session.locked_per_minute_cost = session.per_minute_cost
+            session.status = ConsultationSession.Status.IN_PROGRESS
+            session.started_at = timezone.now()
+            session.save(update_fields=["locked_per_minute_cost", "status", "started_at"])
+    except IntegrityError:
+        _fail("A user may only have one in-progress session.")
     return session
 
 
