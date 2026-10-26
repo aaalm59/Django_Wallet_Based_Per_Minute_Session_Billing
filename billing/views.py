@@ -2,6 +2,7 @@ import uuid
 from decimal import Decimal, InvalidOperation
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -95,14 +96,15 @@ class RechargeCallbackView(APIView):
         if requested_status not in RechargeTransaction.Status.values:
             raise ValidationError({"status": "Use pending, success, or failed."})
         with transaction.atomic():
-            recharge = RechargeTransaction.objects.select_for_update().get(reference=reference)
-            if requested_status == RechargeTransaction.Status.SUCCESS and recharge.status != RechargeTransaction.Status.SUCCESS:
-                wallet, _ = Wallet.objects.select_for_update().get_or_create(user=recharge.user)
-                wallet.balance += recharge.amount
-                wallet.save(update_fields=["balance"])
+            recharge = get_object_or_404(RechargeTransaction.objects.select_for_update(), reference=reference)
+            # Gateway outcomes are final. Only a pending transaction may change state or credit money.
             if recharge.status == RechargeTransaction.Status.PENDING:
                 recharge.status = requested_status
                 recharge.save(update_fields=["status"])
+                if requested_status == RechargeTransaction.Status.SUCCESS:
+                    wallet, _ = Wallet.objects.select_for_update().get_or_create(user=recharge.user)
+                    wallet.balance += recharge.amount
+                    wallet.save(update_fields=["balance"])
         return Response(recharge_data(recharge))
 
 
@@ -127,7 +129,7 @@ class SessionAssignView(APIView):
         if request.user.role != User.Role.PROVIDER:
             raise PermissionDenied("Only providers can be assigned.")
         with transaction.atomic():
-            session = ConsultationSession.objects.select_for_update().get(pk=pk)
+            session = get_object_or_404(ConsultationSession.objects.select_for_update(), pk=pk)
             if session.status != ConsultationSession.Status.UNASSIGNED:
                 raise ValidationError({"detail": "Only an unassigned session may be assigned."})
             session.provider = request.user
@@ -139,7 +141,7 @@ class SessionAssignView(APIView):
 class SessionAcceptView(APIView):
     def post(self, request, pk):
         with transaction.atomic():
-            session = ConsultationSession.objects.select_for_update().get(pk=pk)
+            session = get_object_or_404(ConsultationSession.objects.select_for_update(), pk=pk)
             if session.provider_id != request.user.id or session.status != ConsultationSession.Status.ASSIGNED:
                 raise ValidationError({"detail": "Only the assigned provider can accept an assigned session."})
             session.status = ConsultationSession.Status.ACCEPTED
@@ -154,7 +156,7 @@ class SessionStartView(APIView):
 
 class SessionBillView(APIView):
     def post(self, request, pk):
-        session = ConsultationSession.objects.get(pk=pk)
+        session = get_object_or_404(ConsultationSession, pk=pk)
         if request.user.id not in (session.user_id, session.provider_id):
             raise PermissionDenied("You are not part of this session.")
         return Response(session_data(bill_session(pk)))

@@ -11,7 +11,7 @@ class BillingFlowTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username="customer", password="password", role=User.Role.USER)
         self.provider = User.objects.create_user(username="expert", password="password", role=User.Role.PROVIDER)
-        self.wallet = Wallet.objects.create(user=self.user, balance=Decimal("0.00"))
+        self.wallet = Wallet.objects.get(user=self.user)
         self.client = APIClient()
 
     def session_at(self, status=ConsultationSession.Status.ACCEPTED, balance="500.00"):
@@ -148,6 +148,20 @@ class BillingFlowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.wallet.refresh_from_db()
         self.assertEqual(self.wallet.balance, Decimal("100.00"))
+
+    def test_failed_recharge_cannot_later_credit_wallet(self):
+        recharge = RechargeTransaction.objects.create(user=self.user, amount=Decimal("100.00"), reference="payment-failed")
+        self.assertEqual(self.client.post(f"/api/recharges/{recharge.reference}/callback/", {"status": "failed"}, format="json").status_code, 200)
+        self.assertEqual(self.client.post(f"/api/recharges/{recharge.reference}/callback/", {"status": "success"}, format="json").status_code, 200)
+        recharge.refresh_from_db()
+        self.wallet.refresh_from_db()
+        self.assertEqual(recharge.status, RechargeTransaction.Status.FAILED)
+        self.assertEqual(self.wallet.balance, Decimal("0.00"))
+
+    def test_unknown_session_returns_404(self):
+        self.client.force_authenticate(self.user)
+        response = self.client.post("/api/sessions/999999/start/")
+        self.assertEqual(response.status_code, 404)
 
     def test_duplicate_billing_does_not_double_charge_a_minute(self):
         session = self.start(self.session_at())

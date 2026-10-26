@@ -1,5 +1,4 @@
-from datetime import timedelta
-from decimal import Decimal
+from django.shortcuts import get_object_or_404
 from django.db import transaction
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
@@ -12,7 +11,7 @@ def _fail(message):
 
 @transaction.atomic
 def start_session(session_id, user):
-    session = ConsultationSession.objects.select_for_update().get(pk=session_id)
+    session = get_object_or_404(ConsultationSession.objects.select_for_update(), pk=session_id)
     if session.user_id != user.id or session.status != ConsultationSession.Status.ACCEPTED:
         _fail("Session must be accepted by its provider before the user can start it.")
     if ConsultationSession.objects.filter(user=user, status=ConsultationSession.Status.IN_PROGRESS).exists():
@@ -30,7 +29,7 @@ def start_session(session_id, user):
 
 @transaction.atomic
 def bill_session(session_id, now=None):
-    session = ConsultationSession.objects.select_for_update().get(pk=session_id)
+    session = get_object_or_404(ConsultationSession.objects.select_for_update(), pk=session_id)
     if session.status != ConsultationSession.Status.IN_PROGRESS:
         _fail("Only an in-progress session can be billed.")
     now = now or timezone.now()
@@ -59,7 +58,7 @@ def bill_session(session_id, now=None):
 
 @transaction.atomic
 def end_session(session_id, actor, ended_by):
-    session = ConsultationSession.objects.select_for_update().get(pk=session_id)
+    session = get_object_or_404(ConsultationSession.objects.select_for_update(), pk=session_id)
     if session.status != ConsultationSession.Status.IN_PROGRESS:
         _fail("Only an in-progress session can be ended.")
     if ended_by == ConsultationSession.EndedBy.USER and session.user_id != actor.id:
