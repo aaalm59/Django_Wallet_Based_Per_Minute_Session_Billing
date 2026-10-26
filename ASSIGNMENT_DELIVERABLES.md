@@ -23,24 +23,28 @@ Additional tests cover money validation, the demo seed command, registration, JW
 
 ## Session state diagram
 
-```text
-unassigned
-    |  provider assigns self (provider's rate is quoted onto the session)
-    v
-assigned
-    |  assigned provider accepts
-    v
-accepted_by_provider
-    |  user starts (wallet must cover 5 × rate; rate is locked)
-    v
-in_progress ---- user ends -------------------------------> completed (ended_by=user)
-    |       ---- provider ends ---------------------------> completed (ended_by=provider)
-    |       ---- wallet cannot cover the next minute -----> completed (ended_by=system_insufficient_balance)
+![Session state diagram](docs/state-diagram.svg)
 
-unassigned / assigned / accepted_by_provider ---- user or provider cancels ----> cancelled
+The same lifecycle as a Mermaid diagram (rendered natively by GitHub):
+
+```mermaid
+stateDiagram-v2
+    [*] --> unassigned : create (user)
+    unassigned --> assigned : assign (provider) - rate quoted
+    assigned --> accepted_by_provider : accept (assigned provider)
+    accepted_by_provider --> in_progress : start (user) - wallet >= 5 x rate, no other in_progress, rate locked
+    in_progress --> in_progress : bill - each minute charged once
+    in_progress --> completed : end (user) - ended_by user
+    in_progress --> completed : provider-end (provider) - ended_by provider
+    in_progress --> completed : system - wallet cannot cover next minute
+    unassigned --> cancelled : cancel
+    assigned --> cancelled : cancel
+    accepted_by_provider --> cancelled : cancel
+    completed --> [*]
+    cancelled --> [*]
 ```
 
-Any other transition returns HTTP 400.
+Any other transition returns HTTP 400 with a message naming the current and required state; acting on someone else's session returns 403.
 
 ## ER diagram
 

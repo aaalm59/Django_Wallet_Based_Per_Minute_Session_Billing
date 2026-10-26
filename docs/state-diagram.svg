@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="600" viewBox="0 0 1440 600" role="img" aria-label="State diagram for the consultation session lifecycle">
+<style>
+.bg{fill:#ffffff}
+.st{stroke-width:1.6}
+.inner{fill:none;stroke-width:1.2}
+.pre{fill:#eff6ff;stroke:#3b82f6}
+.live{fill:#ecfdf5;stroke:#059669}
+.done{fill:#f1f5f9;stroke:#475569}
+.cancel{fill:#fef2f2;stroke:#dc2626}
+.sname{font:600 14px ui-monospace,Consolas,monospace;fill:#0f172a}
+.act{font:600 13px system-ui,-apple-system,'Segoe UI',sans-serif;fill:#0f172a}
+.warnact{font:600 13px system-ui,-apple-system,'Segoe UI',sans-serif;fill:#b45309}
+.note{font:12px system-ui,-apple-system,'Segoe UI',sans-serif;fill:#64748b}
+.guard{font:italic 11px system-ui,-apple-system,'Segoe UI',sans-serif;fill:#7c3aed}
+.tr{stroke:#334155;stroke-width:1.6;fill:none}
+.soft{stroke-dasharray:6 4}
+.warn{stroke:#d97706;stroke-width:1.8}
+.head{fill:#334155}
+.warnhead{fill:#d97706}
+.dot{fill:#334155}
+.rule{stroke:#e2e8f0}
+.h1{font:700 20px system-ui,-apple-system,'Segoe UI',sans-serif;fill:#0f172a}
+.sub{font:13px system-ui,-apple-system,'Segoe UI',sans-serif;fill:#64748b}
+.leg{font:12px system-ui,-apple-system,'Segoe UI',sans-serif;fill:#334155}
+@media (prefers-color-scheme: dark){
+.bg{fill:#0d1117}
+.pre{fill:#0c2d6b;stroke:#58a6ff}.live{fill:#0f3d2e;stroke:#3fb950}.done{fill:#21262d;stroke:#8b949e}.cancel{fill:#3d1214;stroke:#f85149}
+.sname,.act,.h1{fill:#e6edf3}.warnact{fill:#f0b72f}.note,.sub{fill:#8b949e}.guard{fill:#bc8cff}
+.tr{stroke:#c9d1d9}.warn{stroke:#f0b72f}.head,.dot{fill:#c9d1d9}.warnhead{fill:#f0b72f}
+.rule{stroke:#30363d}.leg{fill:#c9d1d9}}
+</style>
+<defs><marker id="head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" class="head"/></marker><marker id="warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" class="warnhead"/></marker></defs>
+<rect width="1440" height="600" class="bg"/>
+<text x="40" y="38" class="h1">Consultation Session — State Diagram</text>
+<text x="40" y="60" class="sub">Each arrow is one API action; the actor allowed to trigger it is shown beneath. Billing never moves a session backwards.</text>
+<rect x="40" y="202.0" width="160" height="56" rx="12" class="st pre"/>
+<text x="120.0" y="235.0" class="sname" text-anchor="middle">unassigned</text>
+<rect x="320" y="202.0" width="160" height="56" rx="12" class="st pre"/>
+<text x="400.0" y="235.0" class="sname" text-anchor="middle">assigned</text>
+<rect x="600" y="202.0" width="210" height="56" rx="12" class="st pre"/>
+<text x="705.0" y="235.0" class="sname" text-anchor="middle">accepted_by_provider</text>
+<rect x="930" y="202.0" width="170" height="56" rx="12" class="st live"/>
+<text x="1015.0" y="235.0" class="sname" text-anchor="middle">in_progress</text>
+<rect x="1230" y="202.0" width="170" height="56" rx="12" class="st done"/>
+<rect x="1234" y="206.0" width="162" height="48" rx="9" class="inner done"/>
+<text x="1315.0" y="235.0" class="sname" text-anchor="middle">completed</text>
+<rect x="470" y="430" width="170" height="56" rx="12" class="st cancel"/>
+<rect x="474" y="434" width="162" height="48" rx="9" class="inner cancel"/>
+<text x="555.0" y="463.0" class="sname" text-anchor="middle">cancelled</text>
+<circle cx="120" cy="120" r="9" class="dot"/>
+<path d="M120 129V200.0" class="tr" marker-end="url(#head)"/>
+<text x="132" y="156" class="act" text-anchor="start">create (user)</text>
+<text x="132" y="171" class="note" text-anchor="start">POST /api/sessions/</text>
+<path d="M200 230H318" class="tr" marker-end="url(#head)"/>
+<text x="260" y="204" class="act" text-anchor="middle">assign</text>
+<text x="260" y="252" class="note" text-anchor="middle">provider</text>
+<text x="260" y="267" class="note" text-anchor="middle">rate quoted</text>
+<path d="M480 230H598" class="tr" marker-end="url(#head)"/>
+<text x="540" y="204" class="act" text-anchor="middle">accept</text>
+<text x="540" y="252" class="note" text-anchor="middle">assigned provider</text>
+<path d="M810 230H928" class="tr" marker-end="url(#head)"/>
+<text x="870" y="204" class="act" text-anchor="middle">start (user)</text>
+<text x="870" y="252" class="guard" text-anchor="middle">guards:</text>
+<text x="870" y="267" class="note" text-anchor="middle">wallet ≥ 5 × rate</text>
+<text x="870" y="282" class="note" text-anchor="middle">no other in_progress</text>
+<text x="870" y="297" class="note" text-anchor="middle">rate locked</text>
+<path d="M1100 230H1228" class="tr" marker-end="url(#head)"/>
+<text x="1165" y="220" class="act" text-anchor="middle">end (user)</text>
+<text x="1165" y="252" class="note" text-anchor="middle">ended_by = user</text>
+<path d="M1070 202.0C1070 122.0 1280 122.0 1280 200.0" class="tr" marker-end="url(#head)"/>
+<text x="1175" y="106.0" class="act" text-anchor="middle">provider-end (provider)</text>
+<text x="1175" y="121.0" class="note" text-anchor="middle">ended_by = provider</text>
+<path d="M970 202.0C940 132.0 1030 132.0 1010 200.0" class="tr" marker-end="url(#head)"/>
+<text x="985" y="124.0" class="act" text-anchor="middle">bill (periodic)</text>
+<text x="985" y="139.0" class="note" text-anchor="middle">each minute charged once</text>
+<path d="M1015.0 258.0C1015.0 368.0 1315.0 368.0 1315.0 260.0" class="tr warn" marker-end="url(#warn)"/>
+<text x="1165" y="358.0" class="warnact" text-anchor="middle">system: wallet cannot cover the next minute</text>
+<text x="1165" y="374.0" class="note" text-anchor="middle">on bill or end · wallet never negative</text>
+<text x="1165" y="389.0" class="note" text-anchor="middle">ended_by = system_insufficient_balance</text>
+<path d="M120 258.0V458.0H468" class="tr soft" marker-end="url(#head)"/>
+<path d="M400 258.0L520 428" class="tr soft" marker-end="url(#head)"/>
+<path d="M705.0 258.0L590 428" class="tr soft" marker-end="url(#head)"/>
+<text x="290" y="448.0" class="act" text-anchor="middle">cancel</text>
+<text x="290" y="480.0" class="note" text-anchor="middle">user or assigned provider</text>
+<line x1="40" y1="534" x2="1400" y2="534" class="rule"/>
+<rect x="40" y="548" width="26" height="16" rx="4" class="st done"/><rect x="43" y="551" width="20" height="10" rx="3" class="inner done"/>
+<text x="74" y="560" class="leg" text-anchor="start">terminal state</text>
+<text x="210" y="560" class="leg" text-anchor="start">Any other action → HTTP 400 naming the current and required state  ·  acting on someone else&#x27;s session → HTTP 403  ·  unknown session → 404</text>
+</svg>

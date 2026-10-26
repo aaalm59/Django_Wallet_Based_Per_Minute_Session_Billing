@@ -91,19 +91,13 @@ Invalid state transitions return **400** with a `detail` message naming the curr
 
 ## State diagram
 
-```text
-unassigned --assign--> assigned --accept--> accepted_by_provider --start--> in_progress --end--> completed
-     |                     |                        |                           |
-     +---------------------+------- cancel ---------+                           +-- system: insufficient balance --> completed
-                           v
-                       cancelled
-```
+![Session state diagram](docs/state-diagram.svg)
 
 ## ER diagram
 
 ![ER diagram](docs/er-diagram.svg)
 
-See [ASSIGNMENT_DELIVERABLES.md](ASSIGNMENT_DELIVERABLES.md) for a Mermaid version of the diagram and the implementation decisions.
+See [ASSIGNMENT_DELIVERABLES.md](ASSIGNMENT_DELIVERABLES.md) for Mermaid versions of both diagrams and the implementation decisions.
 
 ## Implementation notes
 
