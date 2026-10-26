@@ -3,3 +3,6 @@ __pycache__/
 db.sqlite3
 .venv/
 .tooling/
+.env
+env/
+env
