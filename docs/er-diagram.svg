@@ -1,0 +1,198 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="786" viewBox="0 0 1200 786" role="img" aria-label="Entity relationship diagram for wallet-based per-minute session billing">
+<style>
+.bg{fill:#ffffff}
+.box{fill:#ffffff;stroke:#94a3b8;stroke-width:1.2}
+.head{fill:#1e3a5f}
+.alt{fill:#f1f5f9}
+.sep{stroke:#cbd5e1}
+.title{font:600 15px system-ui,-apple-system,'Segoe UI',sans-serif;fill:#ffffff}
+.key{font:700 10px ui-monospace,Consolas,monospace;fill:#b45309}
+.col{font:13px ui-monospace,Consolas,monospace;fill:#0f172a}
+.typ{font:12px system-ui,-apple-system,'Segoe UI',sans-serif;fill:#64748b}
+.foot{font:italic 12px ui-monospace,Consolas,monospace;fill:#7c3aed}
+.rel{stroke:#334155;stroke-width:1.6;fill:none}
+.dash{stroke-dasharray:6 4}
+.ring{fill:#ffffff;stroke:#334155;stroke-width:1.6}
+.lbl{font:italic 12px system-ui,-apple-system,'Segoe UI',sans-serif;fill:#334155;paint-order:stroke;stroke:#ffffff;stroke-width:4}
+.h1{font:700 20px system-ui,-apple-system,'Segoe UI',sans-serif;fill:#0f172a}
+.sub{font:13px system-ui,-apple-system,'Segoe UI',sans-serif;fill:#64748b}
+.leg{font:12px system-ui,-apple-system,'Segoe UI',sans-serif;fill:#334155}
+@media (prefers-color-scheme: dark){
+.bg{fill:#0d1117}.box{fill:#161b22;stroke:#30363d}.head{fill:#1f6feb}.alt{fill:#1c2128}.sep{stroke:#30363d}
+.key{fill:#f0b72f}.col{fill:#e6edf3}.typ{fill:#8b949e}.foot{fill:#bc8cff}
+.rel{stroke:#c9d1d9}.ring{fill:#0d1117;stroke:#c9d1d9}.lbl{fill:#c9d1d9;stroke:#0d1117}
+.h1{fill:#e6edf3}.sub{fill:#8b949e}.leg{fill:#c9d1d9}}
+</style>
+<rect width="1200" height="786" class="bg"/>
+<text x="30" y="38" class="h1">Wallet-Based Per-Minute Session Billing — ER Diagram</text>
+<text x="30" y="60" class="sub">PK primary key · FK foreign key · UQ unique · purple rows are database constraints</text>
+<g class="entity"><rect x="30" y="80" width="300" height="130" rx="8" class="box"/>
+<path d="M30 114V88a8 8 0 0 1 8-8H322a8 8 0 0 1 8 8V114Z" class="head"/>
+<text x="180.0" y="102" class="title" text-anchor="middle">Wallet</text>
+<text x="40" y="130" class="key" text-anchor="start">PK</text>
+<text x="88" y="130" class="col" text-anchor="start">id</text>
+<text x="320" y="130" class="typ" text-anchor="end">bigint</text>
+<rect x="31" y="138" width="298" height="24" class="alt"/>
+<text x="40" y="154" class="key" text-anchor="start">FK UQ</text>
+<text x="88" y="154" class="col" text-anchor="start">user_id</text>
+<text x="320" y="154" class="typ" text-anchor="end">→ User</text>
+<text x="88" y="178" class="col" text-anchor="start">balance</text>
+<text x="320" y="178" class="typ" text-anchor="end">decimal(12,2)</text>
+<line x1="30" y1="186" x2="330" y2="186" class="sep"/>
+<text x="40" y="202" class="foot" text-anchor="start">CHECK balance &gt;= 0</text>
+</g>
+<g class="entity"><rect x="430" y="80" width="320" height="154" rx="8" class="box"/>
+<path d="M430 114V88a8 8 0 0 1 8-8H742a8 8 0 0 1 8 8V114Z" class="head"/>
+<text x="590.0" y="102" class="title" text-anchor="middle">User</text>
+<text x="440" y="130" class="key" text-anchor="start">PK</text>
+<text x="488" y="130" class="col" text-anchor="start">id</text>
+<text x="740" y="130" class="typ" text-anchor="end">bigint</text>
+<rect x="431" y="138" width="318" height="24" class="alt"/>
+<text x="440" y="154" class="key" text-anchor="start">UQ</text>
+<text x="488" y="154" class="col" text-anchor="start">username</text>
+<text x="740" y="154" class="typ" text-anchor="end">varchar</text>
+<text x="488" y="178" class="col" text-anchor="start">password</text>
+<text x="740" y="178" class="typ" text-anchor="end">hash</text>
+<rect x="431" y="186" width="318" height="24" class="alt"/>
+<text x="488" y="202" class="col" text-anchor="start">role</text>
+<text x="740" y="202" class="typ" text-anchor="end">user | provider</text>
+<text x="488" y="226" class="col" text-anchor="start">per_minute_rate</text>
+<text x="740" y="226" class="typ" text-anchor="end">decimal NULL (providers)</text>
+</g>
+<g class="entity"><rect x="30" y="370" width="300" height="178" rx="8" class="box"/>
+<path d="M30 404V378a8 8 0 0 1 8-8H322a8 8 0 0 1 8 8V404Z" class="head"/>
+<text x="180.0" y="392" class="title" text-anchor="middle">RechargeTransaction</text>
+<text x="40" y="420" class="key" text-anchor="start">PK</text>
+<text x="88" y="420" class="col" text-anchor="start">id</text>
+<text x="320" y="420" class="typ" text-anchor="end">bigint</text>
+<rect x="31" y="428" width="298" height="24" class="alt"/>
+<text x="40" y="444" class="key" text-anchor="start">FK</text>
+<text x="88" y="444" class="col" text-anchor="start">user_id</text>
+<text x="320" y="444" class="typ" text-anchor="end">→ User</text>
+<text x="88" y="468" class="col" text-anchor="start">amount</text>
+<text x="320" y="468" class="typ" text-anchor="end">decimal(12,2) &gt; 0</text>
+<rect x="31" y="476" width="298" height="24" class="alt"/>
+<text x="40" y="492" class="key" text-anchor="start">UQ</text>
+<text x="88" y="492" class="col" text-anchor="start">reference</text>
+<text x="320" y="492" class="typ" text-anchor="end">varchar(64)</text>
+<text x="88" y="516" class="col" text-anchor="start">status</text>
+<text x="320" y="516" class="typ" text-anchor="end">pending | success | failed</text>
+<rect x="31" y="524" width="298" height="24" class="alt"/>
+<text x="88" y="540" class="col" text-anchor="start">created_at</text>
+<text x="320" y="540" class="typ" text-anchor="end">datetime</text>
+</g>
+<g class="entity"><rect x="430" y="370" width="360" height="346" rx="8" class="box"/>
+<path d="M430 404V378a8 8 0 0 1 8-8H782a8 8 0 0 1 8 8V404Z" class="head"/>
+<text x="610.0" y="392" class="title" text-anchor="middle">ConsultationSession</text>
+<text x="440" y="420" class="key" text-anchor="start">PK</text>
+<text x="488" y="420" class="col" text-anchor="start">id</text>
+<text x="780" y="420" class="typ" text-anchor="end">bigint</text>
+<rect x="431" y="428" width="358" height="24" class="alt"/>
+<text x="440" y="444" class="key" text-anchor="start">FK</text>
+<text x="488" y="444" class="col" text-anchor="start">user_id</text>
+<text x="780" y="444" class="typ" text-anchor="end">→ User (customer)</text>
+<text x="440" y="468" class="key" text-anchor="start">FK</text>
+<text x="488" y="468" class="col" text-anchor="start">provider_id</text>
+<text x="780" y="468" class="typ" text-anchor="end">→ User NULL</text>
+<rect x="431" y="476" width="358" height="24" class="alt"/>
+<text x="488" y="492" class="col" text-anchor="start">status</text>
+<text x="780" y="492" class="typ" text-anchor="end">unassigned … cancelled</text>
+<text x="488" y="516" class="col" text-anchor="start">per_minute_cost</text>
+<text x="780" y="516" class="typ" text-anchor="end">decimal NULL (quote)</text>
+<rect x="431" y="524" width="358" height="24" class="alt"/>
+<text x="488" y="540" class="col" text-anchor="start">locked_per_minute_cost</text>
+<text x="780" y="540" class="typ" text-anchor="end">decimal NULL (at start)</text>
+<text x="488" y="564" class="col" text-anchor="start">started_at / ended_at</text>
+<text x="780" y="564" class="typ" text-anchor="end">datetime NULL</text>
+<rect x="431" y="572" width="358" height="24" class="alt"/>
+<text x="488" y="588" class="col" text-anchor="start">ended_by</text>
+<text x="780" y="588" class="typ" text-anchor="end">user | provider | system</text>
+<text x="488" y="612" class="col" text-anchor="start">billed_minutes</text>
+<text x="780" y="612" class="typ" text-anchor="end">int</text>
+<rect x="431" y="620" width="358" height="24" class="alt"/>
+<text x="488" y="636" class="col" text-anchor="start">billed_amount</text>
+<text x="780" y="636" class="typ" text-anchor="end">decimal(12,2)</text>
+<text x="488" y="660" class="col" text-anchor="start">actual_billable_minutes</text>
+<text x="780" y="660" class="typ" text-anchor="end">int</text>
+<rect x="431" y="668" width="358" height="24" class="alt"/>
+<text x="488" y="684" class="col" text-anchor="start">created_at</text>
+<text x="780" y="684" class="typ" text-anchor="end">datetime</text>
+<line x1="430" y1="692" x2="790" y2="692" class="sep"/>
+<text x="440" y="708" class="foot" text-anchor="start">UNIQUE(user_id) WHERE status = &#x27;in_progress&#x27;</text>
+</g>
+<g class="entity"><rect x="880" y="370" width="290" height="178" rx="8" class="box"/>
+<path d="M880 404V378a8 8 0 0 1 8-8H1162a8 8 0 0 1 8 8V404Z" class="head"/>
+<text x="1025.0" y="392" class="title" text-anchor="middle">SessionBill</text>
+<text x="890" y="420" class="key" text-anchor="start">PK</text>
+<text x="938" y="420" class="col" text-anchor="start">id</text>
+<text x="1160" y="420" class="typ" text-anchor="end">bigint</text>
+<rect x="881" y="428" width="288" height="24" class="alt"/>
+<text x="890" y="444" class="key" text-anchor="start">FK</text>
+<text x="938" y="444" class="col" text-anchor="start">session_id</text>
+<text x="1160" y="444" class="typ" text-anchor="end">→ ConsultationSession</text>
+<text x="938" y="468" class="col" text-anchor="start">minute_number</text>
+<text x="1160" y="468" class="typ" text-anchor="end">int</text>
+<rect x="881" y="476" width="288" height="24" class="alt"/>
+<text x="938" y="492" class="col" text-anchor="start">amount</text>
+<text x="1160" y="492" class="typ" text-anchor="end">decimal(10,2)</text>
+<text x="938" y="516" class="col" text-anchor="start">billed_at</text>
+<text x="1160" y="516" class="typ" text-anchor="end">datetime</text>
+<line x1="880" y1="524" x2="1170" y2="524" class="sep"/>
+<text x="890" y="540" class="foot" text-anchor="start">UNIQUE(session_id, minute_number)</text>
+</g>
+<path d="M330 150.0H430" class="rel"/>
+<line x1="422" y1="143.0" x2="422" y2="157.0" class="rel"/>
+<line x1="416" y1="143.0" x2="416" y2="157.0" class="rel"/>
+<line x1="338" y1="157.0" x2="338" y2="143.0" class="rel"/>
+<line x1="344" y1="157.0" x2="344" y2="143.0" class="rel"/>
+<text x="380.0" y="142.0" class="lbl" text-anchor="middle">owns</text>
+<path d="M430 198.0H380V440.0H330" class="rel"/>
+<line x1="422" y1="191.0" x2="422" y2="205.0" class="rel"/>
+<line x1="416" y1="191.0" x2="416" y2="205.0" class="rel"/>
+<line x1="344" y1="440.0" x2="330" y2="432.0" class="rel"/>
+<line x1="344" y1="440.0" x2="330" y2="440.0" class="rel"/>
+<line x1="344" y1="440.0" x2="330" y2="448.0" class="rel"/>
+<line x1="350" y1="447.0" x2="350" y2="433.0" class="rel"/>
+<text x="374" y="319.0" class="lbl" text-anchor="end">recharges</text>
+<path d="M520 234V370" class="rel"/>
+<line x1="513" y1="242" x2="527" y2="242" class="rel"/>
+<line x1="513" y1="248" x2="527" y2="248" class="rel"/>
+<line x1="520" y1="356" x2="512" y2="370" class="rel"/>
+<line x1="520" y1="356" x2="520" y2="370" class="rel"/>
+<line x1="520" y1="356" x2="528" y2="370" class="rel"/>
+<line x1="527" y1="350" x2="513" y2="350" class="rel"/>
+<text x="528" y="306.0" class="lbl" text-anchor="start">books (user)</text>
+<path d="M690 234V370" class="rel dash"/>
+<line x1="683" y1="242" x2="697" y2="242" class="rel"/>
+<circle cx="690" cy="253" r="5" class="ring"/>
+<line x1="690" y1="356" x2="682" y2="370" class="rel"/>
+<line x1="690" y1="356" x2="690" y2="370" class="rel"/>
+<line x1="690" y1="356" x2="698" y2="370" class="rel"/>
+<line x1="697" y1="350" x2="683" y2="350" class="rel"/>
+<text x="698" y="306.0" class="lbl" text-anchor="start">serves (provider)</text>
+<path d="M790 440.0H880" class="rel"/>
+<line x1="798" y1="447.0" x2="798" y2="433.0" class="rel"/>
+<line x1="804" y1="447.0" x2="804" y2="433.0" class="rel"/>
+<line x1="866" y1="440.0" x2="880" y2="448.0" class="rel"/>
+<line x1="866" y1="440.0" x2="880" y2="440.0" class="rel"/>
+<line x1="866" y1="440.0" x2="880" y2="432.0" class="rel"/>
+<line x1="860" y1="433.0" x2="860" y2="447.0" class="rel"/>
+<text x="835.0" y="432.0" class="lbl" text-anchor="middle">charges</text>
+<text x="30" y="756" class="leg">Cardinality:</text>
+<path d="M120 752H160" class="rel"/>
+<line x1="152" y1="745" x2="152" y2="759" class="rel"/>
+<line x1="146" y1="745" x2="146" y2="759" class="rel"/>
+<text x="170" y="756" class="leg">exactly one</text>
+<path d="M290 752H330" class="rel"/>
+<line x1="316" y1="752" x2="330" y2="760" class="rel"/>
+<line x1="316" y1="752" x2="330" y2="752" class="rel"/>
+<line x1="316" y1="752" x2="330" y2="744" class="rel"/>
+<line x1="310" y1="745" x2="310" y2="759" class="rel"/>
+<text x="340" y="756" class="leg">many</text>
+<path d="M460 752H500" class="rel"/>
+<line x1="492" y1="745" x2="492" y2="759" class="rel"/>
+<circle cx="481" cy="752" r="5" class="ring"/>
+<text x="510" y="756" class="leg">zero or one</text>
+<path d="M630 752H670" class="rel dash"/>
+<text x="680" y="756" class="leg">optional link (provider set at assignment)</text>
+</svg>

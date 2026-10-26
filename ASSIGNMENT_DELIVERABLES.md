@@ -44,18 +44,58 @@ Any other transition returns HTTP 400.
 
 ## ER diagram
 
-```text
-User (role: user/provider, per_minute_rate for providers)
-  | 1:1
-  +---- Wallet (balance >= 0)
-  |
-  +----< RechargeTransaction (amount, reference UNIQUE, status)
-  |
-  +----< ConsultationSession (user)   [at most one in_progress per user]
-               |
-               +----> User (provider, null until assigned)
-               |
-               +----< SessionBill (minute_number, amount)  [UNIQUE(session, minute_number)]
+![ER diagram](docs/er-diagram.svg)
+
+The same model as a Mermaid diagram (rendered natively by GitHub):
+
+```mermaid
+erDiagram
+    USER ||--|| WALLET : owns
+    USER ||--o{ RECHARGE_TRANSACTION : recharges
+    USER ||--o{ CONSULTATION_SESSION : "books (user)"
+    USER |o--o{ CONSULTATION_SESSION : "serves (provider)"
+    CONSULTATION_SESSION ||--o{ SESSION_BILL : charges
+
+    USER {
+        bigint id PK
+        varchar username UK
+        varchar role "user | provider"
+        decimal per_minute_rate "NULL, providers only"
+    }
+    WALLET {
+        bigint id PK
+        bigint user_id FK,UK
+        decimal balance "CHECK >= 0"
+    }
+    RECHARGE_TRANSACTION {
+        bigint id PK
+        bigint user_id FK
+        decimal amount "> 0"
+        varchar reference UK
+        varchar status "pending | success | failed"
+        datetime created_at
+    }
+    CONSULTATION_SESSION {
+        bigint id PK
+        bigint user_id FK "one in_progress per user"
+        bigint provider_id FK "NULL until assigned"
+        varchar status "unassigned ... completed | cancelled"
+        decimal per_minute_cost "quoted at assignment"
+        decimal locked_per_minute_cost "frozen at start"
+        datetime started_at
+        datetime ended_at
+        varchar ended_by "user | provider | system_insufficient_balance"
+        int billed_minutes
+        decimal billed_amount
+        int actual_billable_minutes
+    }
+    SESSION_BILL {
+        bigint id PK
+        bigint session_id FK "UNIQUE with minute_number"
+        int minute_number
+        decimal amount
+        datetime billed_at
+    }
 ```
 
 ## Important implementation decisions

@@ -99,7 +99,11 @@ unassigned --assign--> assigned --accept--> accepted_by_provider --start--> in_p
                        cancelled
 ```
 
-See [ASSIGNMENT_DELIVERABLES.md](ASSIGNMENT_DELIVERABLES.md) for the ER diagram and implementation decisions.
+## ER diagram
+
+![ER diagram](docs/er-diagram.svg)
+
+See [ASSIGNMENT_DELIVERABLES.md](ASSIGNMENT_DELIVERABLES.md) for a Mermaid version of the diagram and the implementation decisions.
 
 ## Implementation notes
 
