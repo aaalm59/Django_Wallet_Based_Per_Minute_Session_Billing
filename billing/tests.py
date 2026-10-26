@@ -48,6 +48,66 @@ class BillingFlowTests(TestCase):
         }, format="json")
         self.assertEqual(duplicate.status_code, 400)
 
+    def test_jwt_token_authenticates_protected_wallet_api(self):
+        token_response = self.client.post("/api/token/", {
+            "username": "customer", "password": "password",
+        }, format="json")
+        self.assertEqual(token_response.status_code, 200)
+        self.assertIn("access", token_response.data)
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token_response.data['access']}")
+        wallet_response = self.client.get("/api/wallet/")
+        self.assertEqual(wallet_response.status_code, 200)
+        self.assertEqual(wallet_response.data["balance"], "0.00")
+
+    def test_complete_jwt_api_flow(self):
+        customer_signup = self.client.post("/api/users/", {
+            "username": "api-customer", "password": "customer-password", "role": "user",
+        }, format="json")
+        provider_signup = self.client.post("/api/users/", {
+            "username": "api-provider", "password": "provider-password", "role": "provider",
+        }, format="json")
+        self.assertEqual(customer_signup.status_code, 201)
+        self.assertEqual(provider_signup.status_code, 201)
+
+        def token_for(username, password):
+            response = self.client.post("/api/token/", {"username": username, "password": password}, format="json")
+            self.assertEqual(response.status_code, 200)
+            refresh = self.client.post("/api/token/refresh/", {"refresh": response.data["refresh"]}, format="json")
+            self.assertEqual(refresh.status_code, 200)
+            return response.data["access"]
+
+        customer = APIClient()
+        customer.credentials(HTTP_AUTHORIZATION=f"Bearer {token_for('api-customer', 'customer-password')}")
+        provider = APIClient()
+        provider.credentials(HTTP_AUTHORIZATION=f"Bearer {token_for('api-provider', 'provider-password')}")
+
+        self.assertEqual(customer.get("/api/wallet/").status_code, 200)
+        recharge = customer.post("/api/recharges/", {"amount": "500.00"}, format="json")
+        self.assertEqual(recharge.status_code, 201)
+        reference = recharge.data["reference"]
+        self.assertEqual(self.client.post(f"/api/recharges/{reference}/callback/", {"status": "success"}, format="json").status_code, 200)
+        self.assertEqual(self.client.post(f"/api/recharges/{reference}/callback/", {"status": "success"}, format="json").status_code, 200)
+
+        created = customer.post("/api/sessions/", {"per_minute_cost": "50.00"}, format="json")
+        self.assertEqual(created.status_code, 201)
+        session_id = created.data["id"]
+        self.assertEqual(provider.post(f"/api/sessions/{session_id}/assign/").status_code, 200)
+        self.assertEqual(provider.post(f"/api/sessions/{session_id}/accept/").status_code, 200)
+        self.assertEqual(customer.post(f"/api/sessions/{session_id}/start/").status_code, 200)
+
+        session = ConsultationSession.objects.get(pk=session_id)
+        session.started_at = timezone.now() - timedelta(minutes=2, seconds=1)
+        session.save(update_fields=["started_at"])
+        billed = customer.post(f"/api/sessions/{session_id}/bill/")
+        self.assertEqual(billed.status_code, 200)
+        self.assertEqual(billed.data["billed_minutes"], 2)
+        ended = provider.post(f"/api/sessions/{session_id}/provider-end/")
+        self.assertEqual(ended.status_code, 200)
+        self.assertEqual(ended.data["status"], ConsultationSession.Status.COMPLETED)
+        self.assertEqual(ended.data["ended_by"], ConsultationSession.EndedBy.PROVIDER)
+        self.assertEqual(customer.get("/api/wallet/").data["balance"], "400.00")
+
     def test_happy_path_bills_two_minutes_and_ends(self):
         session = self.start(self.session_at())
         session.started_at = timezone.now() - timedelta(minutes=2, seconds=1)
