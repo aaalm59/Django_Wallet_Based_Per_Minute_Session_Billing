@@ -2,6 +2,23 @@
 
 Small Django REST Framework backend for prepaid one-to-one consultations. It uses SQLite locally; swap `DATABASES` in `config/settings.py` for PostgreSQL in deployment.
 
+## Docker (Django + PostgreSQL)
+
+```powershell
+Copy-Item .env.example .env
+# Update the passwords and secret key in .env before starting.
+docker compose up --build
+```
+
+The API is available at `http://localhost:8000`, and Django Admin is at `http://localhost:8000/admin/`.
+The container applies migrations, collects static files, and creates the superuser defined in `.env` on startup.
+
+To stop containers while retaining database data:
+
+```powershell
+docker compose down
+```
+
 ## Setup
 
 ```powershell

@@ -4,5 +4,6 @@ db.sqlite3
 .venv/
 .tooling/
 .env
+.env
 env/
 env
