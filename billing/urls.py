@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (ProviderSessionEndView, RechargeCallbackView, RechargeInitiateView,
-                    SessionAcceptView, SessionAssignView, SessionBillView, SessionEndView,
+                    SessionAcceptView, SessionAssignView, SessionBillView, SessionCancelView, SessionEndView,
                     SessionListCreateView, SessionStartView, UserCreateView, WalletView)
 
 urlpatterns = [
@@ -15,4 +15,5 @@ urlpatterns = [
     path("sessions/<int:pk>/bill/", SessionBillView.as_view()),
     path("sessions/<int:pk>/end/", SessionEndView.as_view()),
     path("sessions/<int:pk>/provider-end/", ProviderSessionEndView.as_view()),
+    path("sessions/<int:pk>/cancel/", SessionCancelView.as_view()),
 ]

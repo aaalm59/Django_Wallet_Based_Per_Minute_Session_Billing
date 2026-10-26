@@ -10,6 +10,8 @@ class User(AbstractUser):
         USER = "user", "User"
         PROVIDER = "provider", "Provider"
     role = models.CharField(max_length=10, choices=Role.choices, default=Role.USER)
+    # Providers own their price; it is quoted onto a session when the provider is assigned.
+    per_minute_rate = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(Decimal("0.01"))])
 
 
 class Wallet(models.Model):
@@ -39,6 +41,7 @@ class ConsultationSession(models.Model):
         ACCEPTED = "accepted_by_provider", "Accepted by provider"
         IN_PROGRESS = "in_progress", "In progress"
         COMPLETED = "completed", "Completed"
+        CANCELLED = "cancelled", "Cancelled"
     class EndedBy(models.TextChoices):
         USER = "user", "User"
         PROVIDER = "provider", "Provider"
@@ -46,7 +49,7 @@ class ConsultationSession(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="sessions")
     provider = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="provided_sessions", null=True, blank=True)
     status = models.CharField(max_length=24, choices=Status.choices, default=Status.UNASSIGNED)
-    per_minute_cost = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal("0.01"))])
+    per_minute_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(Decimal("0.01"))])
     locked_per_minute_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     started_at = models.DateTimeField(null=True, blank=True)
     ended_at = models.DateTimeField(null=True, blank=True)

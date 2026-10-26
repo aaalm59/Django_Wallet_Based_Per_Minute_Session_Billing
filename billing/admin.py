@@ -5,10 +5,10 @@ from .models import ConsultationSession, RechargeTransaction, SessionBill, User,
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
-    list_display = ("username", "email", "role", "is_staff", "is_active")
+    list_display = ("username", "email", "role", "per_minute_rate", "is_staff", "is_active")
     list_filter = ("role", "is_staff", "is_active")
-    fieldsets = UserAdmin.fieldsets + (("Billing role", {"fields": ("role",)}),)
-    add_fieldsets = UserAdmin.add_fieldsets + (("Billing role", {"fields": ("role",)}),)
+    fieldsets = UserAdmin.fieldsets + (("Billing role", {"fields": ("role", "per_minute_rate")}),)
+    add_fieldsets = UserAdmin.add_fieldsets + (("Billing role", {"fields": ("role", "per_minute_rate")}),)
 
 
 @admin.register(Wallet)

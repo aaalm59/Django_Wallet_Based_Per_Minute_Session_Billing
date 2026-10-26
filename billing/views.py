@@ -1,7 +1,6 @@
-import uuid
 from decimal import Decimal, InvalidOperation
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.db import transaction
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.views import APIView
@@ -9,17 +8,22 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from .models import ConsultationSession, RechargeTransaction, User, Wallet
-from .services import bill_session, end_session, start_session
+from .services import (MAX_PER_MINUTE_RATE, MAX_RECHARGE_AMOUNT, accept_session, assign_session, bill_session,
+                       cancel_session, complete_recharge, end_session, initiate_recharge, start_session)
 
 
-def positive_amount(data, field):
+def positive_amount(data, field, max_value):
     try:
         amount = Decimal(str(data.get(field)))
     except (InvalidOperation, TypeError, ValueError):
         raise ValidationError({field: "Provide a valid positive decimal amount."})
     if not amount.is_finite() or amount <= 0:
         raise ValidationError({field: "Must be greater than zero."})
-    return amount
+    if amount > max_value:
+        raise ValidationError({field: f"Must not exceed {max_value}."})
+    if amount != amount.quantize(Decimal("0.01")):
+        raise ValidationError({field: "Use at most two decimal places."})
+    return amount.quantize(Decimal("0.01"))
 
 
 def wallet_data(wallet):
@@ -36,7 +40,8 @@ def recharge_data(recharge):
 def session_data(session):
     return {
         "id": session.id, "user": session.user_id, "provider": session.provider_id,
-        "status": session.status, "per_minute_cost": str(session.per_minute_cost),
+        "status": session.status,
+        "per_minute_cost": str(session.per_minute_cost) if session.per_minute_cost is not None else None,
         "locked_per_minute_cost": (str(session.locked_per_minute_cost)
                                   if session.locked_per_minute_cost is not None else None),
         "started_at": session.started_at, "ended_at": session.ended_at,
@@ -47,7 +52,10 @@ def session_data(session):
 
 
 def user_data(user):
-    return {"id": user.id, "username": user.username, "role": user.role}
+    return {
+        "id": user.id, "username": user.username, "role": user.role,
+        "per_minute_rate": str(user.per_minute_rate) if user.per_minute_rate is not None else None,
+    }
 
 
 class UserCreateView(APIView):
@@ -64,7 +72,10 @@ class UserCreateView(APIView):
             raise ValidationError({"password": "This field is required."})
         if role not in User.Role.values:
             raise ValidationError({"role": "Use user or provider."})
-        user = User(username=username, role=role)
+        # Providers set their own price; customers never carry a rate.
+        rate = (positive_amount(request.data, "per_minute_rate", MAX_PER_MINUTE_RATE)
+                if role == User.Role.PROVIDER else None)
+        user = User(username=username, role=role, per_minute_rate=rate)
         try:
             user.full_clean(exclude=["password"])
         except DjangoValidationError as error:
@@ -82,9 +93,7 @@ class WalletView(APIView):
 
 class RechargeInitiateView(APIView):
     def post(self, request):
-        recharge = RechargeTransaction.objects.create(
-            user=request.user, amount=positive_amount(request.data, "amount"), reference=uuid.uuid4().hex
-        )
+        recharge = initiate_recharge(request.user, positive_amount(request.data, "amount", MAX_RECHARGE_AMOUNT))
         return Response(recharge_data(recharge), status=status.HTTP_201_CREATED)
 
 
@@ -95,58 +104,35 @@ class RechargeCallbackView(APIView):
         requested_status = request.data.get("status")
         if requested_status not in RechargeTransaction.Status.values:
             raise ValidationError({"status": "Use pending, success, or failed."})
-        with transaction.atomic():
-            recharge = get_object_or_404(RechargeTransaction.objects.select_for_update(), reference=reference)
-            # Gateway outcomes are final. Only a pending transaction may change state or credit money.
-            if recharge.status == RechargeTransaction.Status.PENDING:
-                recharge.status = requested_status
-                recharge.save(update_fields=["status"])
-                if requested_status == RechargeTransaction.Status.SUCCESS:
-                    wallet, _ = Wallet.objects.select_for_update().get_or_create(user=recharge.user)
-                    wallet.balance += recharge.amount
-                    wallet.save(update_fields=["balance"])
-        return Response(recharge_data(recharge))
+        return Response(recharge_data(complete_recharge(reference, requested_status)))
 
 
 class SessionListCreateView(APIView):
     def get(self, request):
+        # Providers see their own sessions plus the unassigned ones they may pick up.
         sessions = (ConsultationSession.objects.filter(user=request.user)
                     if request.user.role == User.Role.USER
-                    else ConsultationSession.objects.filter(provider=request.user))
+                    else ConsultationSession.objects.filter(
+                        Q(provider=request.user) | Q(status=ConsultationSession.Status.UNASSIGNED)))
+        sessions = sessions.order_by("-created_at")
         return Response([session_data(session) for session in sessions])
 
     def post(self, request):
         if request.user.role != User.Role.USER:
             raise PermissionDenied("Only users can create consultations.")
-        session = ConsultationSession.objects.create(
-            user=request.user, per_minute_cost=positive_amount(request.data, "per_minute_cost")
-        )
+        # The rate is quoted from the provider at assignment, not chosen by the customer.
+        session = ConsultationSession.objects.create(user=request.user)
         return Response(session_data(session), status=status.HTTP_201_CREATED)
 
 
 class SessionAssignView(APIView):
     def post(self, request, pk):
-        if request.user.role != User.Role.PROVIDER:
-            raise PermissionDenied("Only providers can be assigned.")
-        with transaction.atomic():
-            session = get_object_or_404(ConsultationSession.objects.select_for_update(), pk=pk)
-            if session.status != ConsultationSession.Status.UNASSIGNED:
-                raise ValidationError({"detail": "Only an unassigned session may be assigned."})
-            session.provider = request.user
-            session.status = ConsultationSession.Status.ASSIGNED
-            session.save(update_fields=["provider", "status"])
-        return Response(session_data(session))
+        return Response(session_data(assign_session(pk, request.user)))
 
 
 class SessionAcceptView(APIView):
     def post(self, request, pk):
-        with transaction.atomic():
-            session = get_object_or_404(ConsultationSession.objects.select_for_update(), pk=pk)
-            if session.provider_id != request.user.id or session.status != ConsultationSession.Status.ASSIGNED:
-                raise ValidationError({"detail": "Only the assigned provider can accept an assigned session."})
-            session.status = ConsultationSession.Status.ACCEPTED
-            session.save(update_fields=["status"])
-        return Response(session_data(session))
+        return Response(session_data(accept_session(pk, request.user)))
 
 
 class SessionStartView(APIView):
@@ -170,3 +156,8 @@ class SessionEndView(APIView):
 class ProviderSessionEndView(APIView):
     def post(self, request, pk):
         return Response(session_data(end_session(pk, request.user, ConsultationSession.EndedBy.PROVIDER)))
+
+
+class SessionCancelView(APIView):
+    def post(self, request, pk):
+        return Response(session_data(cancel_session(pk, request.user)))
