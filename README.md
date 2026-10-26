@@ -21,12 +21,28 @@ python manage.py shell
 >>> provider = User.objects.create_user('expert', password='password', role='provider')
 ```
 
-The API uses Basic or session authentication for this assignment.
+## Authentication
+
+Get JWT tokens with `POST /api/token/`:
+
+```json
+{ "username": "customer", "password": "secret" }
+```
+
+Send the returned access token on every protected endpoint:
+
+```text
+Authorization: Bearer <access_token>
+```
+
+Refresh an expired access token with `POST /api/token/refresh/` and `{ "refresh": "..." }`.
 
 ## API
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
+| POST | `/api/token/` | Obtain JWT access and refresh tokens |
+| POST | `/api/token/refresh/` | Refresh an access token |
 | POST | `/api/users/` | Register: `{ "username": "customer", "password": "secret", "role": "user" }` |
 | GET | `/api/wallet/` | Current caller's wallet |
 | POST | `/api/recharges/` | Initiate mock recharge: `{ "amount": "500.00" }` |
