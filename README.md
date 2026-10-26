@@ -27,6 +27,7 @@ The API uses Basic or session authentication for this assignment.
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
+| POST | `/api/users/` | Register: `{ "username": "customer", "password": "secret", "role": "user" }` |
 | GET | `/api/wallet/` | Current caller's wallet |
 | POST | `/api/recharges/` | Initiate mock recharge: `{ "amount": "500.00" }` |
 | POST | `/api/recharges/{reference}/callback/` | Mock callback: `{ "status": "success" }` |

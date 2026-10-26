@@ -1,5 +1,6 @@
 import uuid
 from decimal import Decimal, InvalidOperation
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from rest_framework import status
 from rest_framework.views import APIView
@@ -42,6 +43,34 @@ def session_data(session):
         "billed_amount": str(session.billed_amount),
         "actual_billable_minutes": session.actual_billable_minutes, "created_at": session.created_at,
     }
+
+
+def user_data(user):
+    return {"id": user.id, "username": user.username, "role": user.role}
+
+
+class UserCreateView(APIView):
+    """Public registration endpoint for the two roles used by this assignment."""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        username = str(request.data.get("username", "")).strip()
+        password = request.data.get("password")
+        role = request.data.get("role", User.Role.USER)
+        if not username:
+            raise ValidationError({"username": "This field is required."})
+        if not isinstance(password, str) or not password:
+            raise ValidationError({"password": "This field is required."})
+        if role not in User.Role.values:
+            raise ValidationError({"role": "Use user or provider."})
+        user = User(username=username, role=role)
+        try:
+            user.full_clean(exclude=["password"])
+        except DjangoValidationError as error:
+            raise ValidationError(error.message_dict)
+        user.set_password(password)
+        user.save()
+        return Response(user_data(user), status=status.HTTP_201_CREATED)
 
 
 class WalletView(APIView):

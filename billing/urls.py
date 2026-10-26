@@ -1,9 +1,10 @@
 from django.urls import path
 from .views import (ProviderSessionEndView, RechargeCallbackView, RechargeInitiateView,
                     SessionAcceptView, SessionAssignView, SessionBillView, SessionEndView,
-                    SessionListCreateView, SessionStartView, WalletView)
+                    SessionListCreateView, SessionStartView, UserCreateView, WalletView)
 
 urlpatterns = [
+    path("users/", UserCreateView.as_view()),
     path("wallet/", WalletView.as_view()),
     path("recharges/", RechargeInitiateView.as_view()),
     path("recharges/<str:reference>/callback/", RechargeCallbackView.as_view()),

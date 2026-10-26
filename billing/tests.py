@@ -35,6 +35,19 @@ class BillingFlowTests(TestCase):
         session.refresh_from_db()
         self.assertEqual(session.status, ConsultationSession.Status.ACCEPTED)
 
+    def test_create_user_api_creates_provider_and_rejects_duplicate_username(self):
+        response = self.client.post("/api/users/", {
+            "username": "new-expert", "password": "safe-password", "role": "provider",
+        }, format="json")
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["role"], User.Role.PROVIDER)
+        self.assertTrue(User.objects.get(username="new-expert").check_password("safe-password"))
+
+        duplicate = self.client.post("/api/users/", {
+            "username": "new-expert", "password": "another-password", "role": "provider",
+        }, format="json")
+        self.assertEqual(duplicate.status_code, 400)
+
     def test_happy_path_bills_two_minutes_and_ends(self):
         session = self.start(self.session_at())
         session.started_at = timezone.now() - timedelta(minutes=2, seconds=1)
